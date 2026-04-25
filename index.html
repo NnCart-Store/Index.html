@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#f43f5e">
+
+<title>NnCart Full</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<style>
+img { background:#eee; }
+</style>
+
+</head>
+
+<body class="bg-gray-100">
+
+<!-- 🔴 HEADER -->
+<div class="bg-red-600 text-white p-4 text-lg font-bold flex justify-between">
+  NnCart Store
+  <span>🛒 <span id="cartCount">0</span></span>
+</div>
+
+<div class="p-3">
+
+<input id="search" placeholder="Search Product..." 
+class="border p-2 w-full mb-2 rounded">
+
+<button onclick="startScanner()" 
+class="bg-blue-500 text-white p-2 w-full mb-2 rounded">
+📷 Scan Barcode
+</button>
+
+<div id="scanner" class="mb-3"></div>
+
+<!-- PRODUCTS -->
+<div id="products" class="grid grid-cols-2 gap-3"></div>
+
+<!-- CART -->
+<div class="mt-4 bg-white p-3 rounded shadow">
+<h2 class="font-bold">Cart (<span id="count">0</span>)</h2>
+<div id="cartItems"></div>
+<h3 class="mt-2 font-bold">Total: ₹<span id="total">0</span></h3>
+
+<button onclick="openOrder()" 
+class="bg-green-500 text-white p-2 w-full mt-2 rounded">
+Checkout
+</button>
+</div>
+
+<!-- ORDER BOX -->
+<div id="orderBox" class="hidden mt-4 bg-white p-3 rounded shadow">
+
+<input id="cName" placeholder="Customer Name" class="border p-2 w-full mb-2">
+<input id="mobile" placeholder="Mobile" class="border p-2 w-full mb-2">
+<input id="address" placeholder="Address" class="border p-2 w-full mb-2">
+<input id="payProof" placeholder="Payment Proof" class="border p-2 w-full mb-2">
+<textarea id="desc" placeholder="Description" class="border p-2 w-full mb-2"></textarea>
+
+<h3 class="font-bold">Preview:</h3>
+<div id="preview"></div>
+
+<button onclick="submitOrder()" 
+class="bg-red-500 text-white p-2 w-full mt-2 rounded">
+Submit Order
+</button>
+
+</div>
+
+</div>
+
+<!-- FIREBASE -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+<script>
+
+// 🔥 CONFIG
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "nncart.firebaseapp.com",
+  projectId: "nncart"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// 🔥 SHEET URL
+const SHEET_URL = "PASTE_YOUR_B2C_SCRIPT_URL";
+
+// DATA
+let allProducts = [];
+let cart = [];
+
+// ================= LOAD PRODUCTS =================
+async function loadProducts() {
+  const snap = await db.collection("products").get();
+
+  allProducts = snap.docs.map(doc => doc.data());
+
+  renderProducts(allProducts);
+}
+
+// ================= RENDER PRODUCTS =================
+function renderProducts(list) {
+
+  if(!list.length){
+    document.getElementById("products").innerHTML = "No Products";
+    return;
+  }
+
+  let html = "";
+
+  list.forEach(p => {
+
+    html += `
+    <div class="bg-white p-2 rounded shadow">
+
+      <img src="${p["Image URL"] || 'https://via.placeholder.com/150'}"
+      class="h-28 w-full object-cover rounded">
+
+      <h3 class="text-sm font-bold mt-1">
+      ${p["Product Name"] || "No Name"}
+      </h3>
+
+      <p class="text-red-600 font-bold">
+      ₹${p["Price"] || 0}
+      </p>
+
+      <button onclick='addToCart(${JSON.stringify(p)})'
+      class="bg-red-500 text-white w-full mt-1 p-1 rounded">
+      Add
+      </button>
+
+    </div>`;
+  });
+
+  document.getElementById("products").innerHTML = html;
+}
+
+// ================= SEARCH =================
+document.getElementById("search").oninput = function(e) {
+  const v = e.target.value.toLowerCase();
+
+  const filtered = allProducts.filter(p =>
+    (p["Product Name"] || "").toLowerCase().includes(v)
+  );
+
+  renderProducts(filtered);
+};
+
+// ================= CART =================
+function addToCart(p) {
+
+  const found = cart.find(i => i["Product Name"] === p["Product Name"]);
+
+  if(found){
+    found.qty += 1;
+  } else {
+    p.qty = 1;
+    cart.push(p);
+  }
+
+  renderCart();
+}
+
+function renderCart(){
+
+  let html = "";
+  let total = 0;
+
+  cart.forEach((item,i)=>{
+
+    const price = Number(item["Price"] || 0);
+    const qty = item.qty || 1;
+
+    total += price * qty;
+
+    html += `
+    <div class="flex justify-between text-sm mb-1">
+      ${item["Product Name"]} x${qty}
+      <div>
+      ₹${price*qty}
+      <button onclick="removeItem(${i})">❌</button>
+      </div>
+    </div>`;
+  });
+
+  document.getElementById("cartItems").innerHTML = html;
+  document.getElementById("preview").innerHTML = html;
+  document.getElementById("count").innerText = cart.length;
+  document.getElementById("cartCount").innerText = cart.length;
+  document.getElementById("total").innerText = total;
+}
+
+function removeItem(i){
+  cart.splice(i,1);
+  renderCart();
+}
+
+// ================= SCANNER =================
+function startScanner(){
+
+  const qr = new Html5Qrcode("scanner");
+
+  qr.start(
+    { facingMode: "environment" },
+    { fps: 10 },
+
+    (code)=>{
+
+      const found = allProducts.find(p => p["Barcode"] == code);
+
+      if(found){
+        addToCart(found);
+      } else {
+        alert("Product not found!");
+      }
+
+      qr.stop();
+    }
+  );
+}
+
+// ================= ORDER =================
+function openOrder(){
+  document.getElementById("orderBox").classList.remove("hidden");
+}
+
+// ================= SHEET =================
+async function sendToSheet(data){
+
+  try{
+    await fetch(SHEET_URL,{
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify(data)
+    });
+  }catch(e){
+    console.log("Sheet error");
+  }
+}
+
+// ================= SUBMIT =================
+async function submitOrder(){
+
+  const name = cName.value.trim();
+  const mob = mobile.value.trim();
+
+  if(!name || !mob){
+    alert("Name & Mobile required");
+    return;
+  }
+
+  if(cart.length===0){
+    alert("Cart empty");
+    return;
+  }
+
+  const now = new Date();
+
+  const total = cart.reduce((s,i)=>s + (i.Price||0)*(i.qty||1),0);
+
+  const data = {
+
+    "Timestamp": now.toISOString(),
+    "Customer Name": name,
+    "Mobile": mob,
+    "Address": address.value,
+    "Products": cart.map(i=>i["Product Name"]+" x"+i.qty).join(", "),
+    "Total": total,
+    "Payment Proof": payProof.value,
+    "Status": "Pending",
+    "Barcode ID": "",
+    "Price": total,
+    "Size": "",
+    "Color": "",
+    "Category": "",
+    "Stock": "",
+    "Shipping ID": "Pending",
+    "Description": desc.value,
+    "Order Date": now.toLocaleDateString(),
+    "OrderTime": now.toLocaleTimeString()
+
+  };
+
+  try{
+
+    await db.collection("orders").add(data);
+    await sendToSheet(data);
+
+    alert("Order Success ✅");
+
+    cart = [];
+    renderCart();
+    document.querySelectorAll("input,textarea").forEach(e=>e.value="");
+
+  }catch(e){
+    alert("Error ❌");
+    console.log(e);
+  }
+}
+
+// ================= START =================
+loadProducts();
+
+</script>
+
+</body>
+</html>
