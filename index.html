@@ -80,7 +80,7 @@ Submit Order
 
 <script>
 
-// 🔥 CONFIG
+// 🔥 CONFIG (अपना डाल)
 const firebaseConfig = {
   apiKey: "YOUR_API_KEY",
   authDomain: "nncart.firebaseapp.com",
@@ -90,20 +90,24 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// 🔥 SHEET URL
+// 🔥 GOOGLE SHEET URL
 const SHEET_URL = "https://script.google.com/macros/s/AKfycbxJyzPwLSZ2BAStTcbo-EhAXeiMtc97ZhRhUAoLcNIOpF8-C1m81M77rlL7AYYo8JoP/exec";
 
 // DATA
 let allProducts = [];
 let cart = [];
+let scannerRunning = false;
+let qrScanner = null;
 
 // ================= LOAD PRODUCTS =================
 async function loadProducts() {
-  const snap = await db.collection("products").get();
-
-  allProducts = snap.docs.map(doc => doc.data());
-
-  renderProducts(allProducts);
+  try{
+    const snap = await db.collection("products").get();
+    allProducts = snap.docs.map(doc => doc.data());
+    renderProducts(allProducts);
+  }catch(e){
+    alert("❌ Products load error");
+  }
 }
 
 // ================= RENDER PRODUCTS =================
@@ -172,14 +176,14 @@ function addToCart(p) {
 function renderCart(){
 
   let html = "";
-  let total = 0;
+  let totalVal = 0;
 
   cart.forEach((item,i)=>{
 
     const price = Number(item["Price"] || 0);
     const qty = item.qty || 1;
 
-    total += price * qty;
+    totalVal += price * qty;
 
     html += `
     <div class="flex justify-between text-sm mb-1">
@@ -195,7 +199,7 @@ function renderCart(){
   document.getElementById("preview").innerHTML = html;
   document.getElementById("count").innerText = cart.length;
   document.getElementById("cartCount").innerText = cart.length;
-  document.getElementById("total").innerText = total;
+  document.getElementById("total").innerText = totalVal;
 }
 
 function removeItem(i){
@@ -203,28 +207,52 @@ function removeItem(i){
   renderCart();
 }
 
-// ================= SCANNER =================
-function startScanner(){
+// ================= SCANNER (FIXED) =================
+async function startScanner(){
 
-  const qr = new Html5Qrcode("scanner");
+  if(scannerRunning){
+    alert("Scanner already running");
+    return;
+  }
 
-  qr.start(
-    { facingMode: "environment" },
-    { fps: 10 },
+  try{
 
-    (code)=>{
+    scanner.innerHTML = "";
+    qrScanner = new Html5Qrcode("scanner");
+    scannerRunning = true;
 
-      const found = allProducts.find(p => p["Barcode"] == code);
+    await qrScanner.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: 250 },
 
-      if(found){
-        addToCart(found);
-      } else {
-        alert("Product not found!");
+      (code)=>{
+
+        const found = allProducts.find(p => p["Barcode"] == code);
+
+        if(found){
+          addToCart(found);
+        } else {
+          alert("Product not found!");
+        }
+
+        stopScanner();
       }
+    );
 
-      qr.stop();
+  }catch(e){
+    alert("❌ Camera blocked या app support नहीं करता");
+    scannerRunning = false;
+  }
+}
+
+async function stopScanner(){
+  try{
+    if(qrScanner){
+      await qrScanner.stop();
+      qrScanner.clear();
+      scannerRunning = false;
     }
-  );
+  }catch(e){}
 }
 
 // ================= ORDER =================
@@ -264,7 +292,7 @@ async function submitOrder(){
 
   const now = new Date();
 
-  const total = cart.reduce((s,i)=>s + (i.Price||0)*(i.qty||1),0);
+  const totalVal = cart.reduce((s,i)=>s + (Number(i.Price||0)*(i.qty||1)),0);
 
   const data = {
 
@@ -273,19 +301,9 @@ async function submitOrder(){
     "Mobile": mob,
     "Address": address.value,
     "Products": cart.map(i=>i["Product Name"]+" x"+i.qty).join(", "),
-    "Total": total,
+    "Total": totalVal,
     "Payment Proof": payProof.value,
-    "Status": "Pending",
-    "Barcode ID": "",
-    "Price": total,
-    "Size": "",
-    "Color": "",
-    "Category": "",
-    "Stock": "",
-    "Shipping ID": "Pending",
-    "Description": desc.value,
-    "Order Date": now.toLocaleDateString(),
-    "OrderTime": now.toLocaleTimeString()
+    "Status": "Pending"
 
   };
 
