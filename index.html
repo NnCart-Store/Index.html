@@ -234,24 +234,65 @@ async function submitLogic(data) {
     } catch(e) { alert("Error ❌"); }
 }
 
-async function submitOrder(){
-  const name = cName.value.trim(); const mob = mobile.value.trim();
-  if(!name || !mob || cart.length===0) return alert("Fill details!");
+async function submitOrder() {
+  const name = document.getElementById("cName").value.trim();
+  const mob = document.getElementById("mobile").value.trim();
+  
+  if (!name || !mob || cart.length === 0) {
+    return alert("Details bhariye ya cart check karein!");
+  }
+
   const data = {
     "Timestamp": new Date().toISOString(),
     "Customer Name": name,
     "Mobile": mob,
-    "Address": address.value,
-    "Products": cart.map(i=>i["Product Name"]+" x"+i.qty).join(", "),
+    "Address": document.getElementById("address").value,
+    "Products": cart.map(i => i["Product Name"] + " x" + i.qty).join(", "),
     "Total": document.getElementById("total").innerText,
     "Status": "Pending"
   };
-  await submitLogic(data);
-  cart = []; renderCart();
-  document.getElementById("orderBox").classList.add("hidden");
+
+  try {
+    await db.collection("orders").add(data);
+    await fetch(SHEET_URL + "?action=placeOrder", {
+      method: "POST",
+      body: JSON.stringify(data)
+    });
+    alert("Order Success ✅");
+    cart = [];
+    renderCart();
+    document.querySelectorAll("input,textarea").forEach(e => e.value = "");
+    document.getElementById("orderBox").classList.add("hidden");
+  } catch (e) {
+    alert("Error ❌");
+  }
 }
 
+// 🔥 Sabse pehle products load honge
 loadProducts();
 </script>
+
+<div id="quickOrderBox" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl">
+        <h2 class="text-xl font-bold mb-2 text-red-600 border-b pb-2">Quick Order</h2>
+        <p id="selectedItemName" class="font-bold text-gray-700 mb-4 bg-gray-50 p-2 rounded-lg text-sm text-left"></p>
+        
+        <div class="space-y-3 text-left">
+            <input id="qName" placeholder="आपका नाम" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-red-500">
+            <input id="qMobile" placeholder="मोबाइल नंबर" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-red-500">
+            <div class="grid grid-cols-2 gap-2">
+                <input id="qSize" placeholder="Size (L, XL)" class="p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none">
+                <input id="qColor" placeholder="Color" class="p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none">
+            </div>
+            <textarea id="qAddress" placeholder="पूरा पता (Full Address)" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none h-20"></textarea>
+        </div>
+
+        <div class="flex gap-2 mt-6">
+            <button onclick="document.getElementById('quickOrderBox').classList.add('hidden')" class="flex-1 py-3 font-bold text-gray-500">Cancel</button>
+            <button onclick="confirmQuickOrder()" class="flex-1 py-3 bg-green-600 text-white font-bold rounded-xl shadow-lg border-b-4 border-green-800 active:border-b-0 active:translate-y-[2px]">Confirm ✅</button>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>
