@@ -268,28 +268,28 @@ async function submitOrder() {
   }
 }
 
-// 🔥 Sabse pehle products load honge
+// 🔥 Sabse pehle products load honge tabhi button kaam karenge
 loadProducts();
 </script>
 
 <div id="quickOrderBox" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-    <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl">
-        <h2 class="text-xl font-bold mb-2 text-red-600 border-b pb-2">Quick Order</h2>
-        <p id="selectedItemName" class="font-bold text-gray-700 mb-4 bg-gray-50 p-2 rounded-lg text-sm text-left"></p>
+    <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl overflow-y-auto max-h-[90vh]">
+        <h2 class="text-xl font-bold mb-2 text-red-600 border-b pb-2 text-left italic uppercase tracking-tighter">Quick Order</h2>
+        <p id="selectedItemName" class="font-bold text-gray-700 mb-4 bg-gray-100 p-2 rounded-lg text-sm text-left"></p>
         
         <div class="space-y-3 text-left">
-            <input id="qName" placeholder="आपका नाम" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-red-500">
-            <input id="qMobile" placeholder="मोबाइल नंबर" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-red-500">
+            <input id="qName" type="text" placeholder="Aapka Naam" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-red-500 text-black">
+            <input id="qMobile" type="tel" placeholder="Mobile Number" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-red-500 text-black">
             <div class="grid grid-cols-2 gap-2">
-                <input id="qSize" placeholder="Size (L, XL)" class="p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none">
-                <input id="qColor" placeholder="Color" class="p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none">
+                <input id="qSize" type="text" placeholder="Size (L, XL)" class="p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-red-500 text-black">
+                <input id="qColor" type="text" placeholder="Color" class="p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-red-500 text-black">
             </div>
-            <textarea id="qAddress" placeholder="पूरा पता (Full Address)" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none h-20"></textarea>
+            <textarea id="qAddress" placeholder="Full Delivery Address" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none h-20 focus:border-red-500 text-black"></textarea>
         </div>
 
         <div class="flex gap-2 mt-6">
-            <button onclick="document.getElementById('quickOrderBox').classList.add('hidden')" class="flex-1 py-3 font-bold text-gray-500">Cancel</button>
-            <button onclick="confirmQuickOrder()" class="flex-1 py-3 bg-green-600 text-white font-bold rounded-xl shadow-lg border-b-4 border-green-800 active:border-b-0 active:translate-y-[2px]">Confirm ✅</button>
+            <button onclick="document.getElementById('quickOrderBox').classList.add('hidden')" class="flex-1 py-3 font-bold text-gray-400">CANCEL</button>
+            <button onclick="confirmQuickOrder()" class="flex-1 py-3 bg-green-600 text-white font-bold rounded-xl shadow-lg border-b-4 border-green-800 active:translate-y-[2px] active:border-b-0 transition-all">CONFIRM ✅</button>
         </div>
     </div>
 </div>
