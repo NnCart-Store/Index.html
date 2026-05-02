@@ -21,20 +21,22 @@ img { background:#eee; }
 </head>
 <body class="bg-gray-100 pb-20">
 
-<header class="bg-[#FF0000] text-white p-4 sticky top-0 z-50 flex justify-between items-center shadow-lg border-b-4 border-red-800">
-  <h1 class="text-xl font-bold italic">NnCart Store</h1>
+<header class="bg-[#003399] text-white p-4 sticky top-0 z-50 flex justify-between items-center shadow-md">
+  <div class="flex flex-col" onclick="location.reload()">
+      <h1 class="text-2xl font-black italic tracking-tighter leading-none">NnCart<span class="text-yellow-400">.in</span></h1>
+      <p class="text-[8px] italic font-medium opacity-90">Sab Kuch... Yahin Se!</p>
+  </div>
   
-  <div class="flex items-center gap-3">
-    <button onclick="installApp()" id="installBtn" class="hidden text-[10px] bg-yellow-400 text-black px-2 py-1 rounded font-bold shadow-sm animate-pulse">
-      INSTALL APP
-    </button>
-
-    <div class="relative cursor-pointer">
-      <i class="fa-solid fa-cart-shopping text-xl"></i>
-      <span id="cartCount" class="absolute -top-2 -right-2 bg-[#FFD700] text-black text-[10px] px-1.5 rounded-full font-bold shadow-sm">0</span>
+  <div class="flex items-center gap-4">
+    <i class="fa-solid fa-magnifying-glass text-lg cursor-pointer" onclick="document.getElementById('search').focus()"></i>
+    
+    <div class="relative cursor-pointer" onclick="toggleCart()">
+      <i class="fa-solid fa-cart-shopping text-2xl"></i>
+      <span id="cartCount" class="absolute -top-2 -right-2 bg-orange-600 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold border-2 border-[#003399]">0</span>
     </div>
   </div>
 </header>
+
 
 <div class="p-3">
     <input id="search" placeholder="Search Product..." class="border-2 border-gray-200 p-3 w-full mb-4 rounded-xl outline-none focus:border-[#FFD700] shadow-sm">
